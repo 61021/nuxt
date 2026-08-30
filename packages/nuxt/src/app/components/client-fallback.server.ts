@@ -102,7 +102,8 @@ const NuxtClientFallbackServer = defineComponent({
     if (ctx.ssrFailed) {
       const { fallback, placeholder } = ctx.$slots
       if (fallback || placeholder) {
-        ssrRenderSlot(ctx.$slots, fallback ? 'fallback' : 'placeholder', {}, null, push, parent)
+        // same priority as the client component
+        ssrRenderSlot(ctx.$slots, placeholder ? 'placeholder' : 'fallback', {}, null, push, parent)
       } else {
         const content = ctx.placeholder || ctx.fallback
         const tag = sanitizeTag(ctx.placeholderTag || ctx.fallbackTag, 'div')

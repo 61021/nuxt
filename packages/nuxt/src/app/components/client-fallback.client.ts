@@ -60,7 +60,8 @@ const NuxtClientFallbackClient = defineComponent({
           if (slot) { return h(Fragment, null, slot()) }
           const fallbackStr = props.placeholder || props.fallback
           const fallbackTag = sanitizeTag(props.placeholderTag || props.fallbackTag, 'div')
-          return createElementBlock(fallbackTag, null, fallbackStr)
+          // the server render applies fallthrough attributes to this element
+          return createElementBlock(fallbackTag, { ...ctx.attrs }, fallbackStr)
         }
       }
       return h(Fragment, null, ctx.slots.default?.())
