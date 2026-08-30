@@ -22,10 +22,15 @@ const ROUTE_KEY_NORMAL_RE = /:\w+/g
 // TODO: consider refactoring into single utility
 // See https://github.com/nuxt/nuxt/blob/main/packages/nuxt/src/pages/runtime/utils.ts#L8-L19
 function generateRouteKey (route: RouteLocationNormalized) {
-  const source = route?.meta.key ?? route.path
-    .replace(ROUTE_KEY_PARENTHESES_RE, '$1')
-    .replace(ROUTE_KEY_SYMBOLS_RE, '$1')
-    .replace(ROUTE_KEY_NORMAL_RE, r => (route.params as Record<string, unknown>)[r.slice(1)]?.toString() || '')
+  // interpolate the matched record's pattern, not the resolved path: a resolved
+  // path has no `:param` placeholders, but may contain literal `:` characters
+  const record = route.matched[route.matched.length - 1]
+  const source = route?.meta.key ?? (record
+    ? record.path
+        .replace(ROUTE_KEY_PARENTHESES_RE, '$1')
+        .replace(ROUTE_KEY_SYMBOLS_RE, '$1')
+        .replace(ROUTE_KEY_NORMAL_RE, r => (route.params as Record<string, unknown>)[r.slice(1)]?.toString() || '')
+    : route.path)
   return typeof source === 'function' ? source(route) : source
 }
 

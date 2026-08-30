@@ -1,6 +1,37 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getFragmentHTML } from '../../packages/nuxt/src/app/components/utils'
+import type { RouteLocationNormalized } from 'vue-router'
+import { getFragmentHTML, isChangingPage } from '../../packages/nuxt/src/app/components/utils'
+
+describe('isChangingPage', () => {
+  const component = {}
+  function makeRoute (path: string, params: Record<string, unknown>, recordPath = '/files/:name'): RouteLocationNormalized {
+    return {
+      path,
+      params,
+      meta: {},
+      matched: [{ path: recordPath, components: { default: component } }],
+    } as unknown as RouteLocationNormalized
+  }
+
+  it('detects a param change between paths containing literal colons', () => {
+    const to = makeRoute('/files/report:v1', { name: 'report:v1' })
+    const from = makeRoute('/files/report:v2', { name: 'report:v2' })
+    expect(isChangingPage(to, from)).toBe(true)
+  })
+
+  it('detects a plain param change', () => {
+    const to = makeRoute('/files/a', { name: 'a' })
+    const from = makeRoute('/files/b', { name: 'b' })
+    expect(isChangingPage(to, from)).toBe(true)
+  })
+
+  it('returns false when only query changes', () => {
+    const to = makeRoute('/files/a', { name: 'a' })
+    const from = makeRoute('/files/a', { name: 'a' })
+    expect(isChangingPage(to, from)).toBe(false)
+  })
+})
 
 describe('getFragmentHTML', () => {
   afterEach(() => {
