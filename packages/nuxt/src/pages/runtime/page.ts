@@ -80,9 +80,17 @@ export default defineComponent({
         removeGuard()
       })
     }
+    let pageLoadingEndHookAlreadyCalled = false
     if (import.meta.client && props.pageKey) {
+      const router = useRouter()
+      // Inline function props get a new identity on every parent render, so compare
+      // the keys they resolve to rather than the props themselves. See #24010.
       watch(() => props.pageKey, (next, prev) => {
-        if (next !== prev) {
+        const route = (props.route ?? router.currentRoute.value) as RouteLocationNormalizedLoaded
+        const nextKey = typeof next === 'function' ? next(route) : next
+        const prevKey = typeof prev === 'function' ? prev(route) : prev
+        if (nextKey !== prevKey) {
+          pageLoadingEndHookAlreadyCalled = false
           nuxtApp.callHook('page:loading:start')
         }
       })
@@ -92,7 +100,6 @@ export default defineComponent({
       nuxtApp._isNuxtPageUsed = true
     }
 
-    let pageLoadingEndHookAlreadyCalled = false
     if (import.meta.client) {
       const unsub = useRouter().beforeResolve(() => {
         pageLoadingEndHookAlreadyCalled = false

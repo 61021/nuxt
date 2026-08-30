@@ -1126,3 +1126,73 @@ describe('NuxtPage with page keys', () => {
     el.unmount()
   })
 })
+
+describe('NuxtPage loading hooks when the page key changes without a navigation', () => {
+  let router: ReturnType<typeof useRouter>
+  let nuxtApp: ReturnType<typeof useNuxtApp>
+
+  beforeEach(() => {
+    router = useRouter()
+    nuxtApp = useNuxtApp()
+
+    router.addRoute({
+      name: 'loading-hooks',
+      path: '/loading-hooks',
+      component: defineComponent({
+        name: 'loading-hooks',
+        setup: () => () => h('div', 'loading hooks page'),
+      }),
+    })
+  })
+
+  afterEach(async () => {
+    await navigateTo('/')
+    await flushPromises()
+    router.removeRoute('loading-hooks')
+  })
+
+  it('does not fire page:loading:start when a parent re-render recreates a function page key', async () => {
+    const counter = ref(0)
+    const el = await mountSuspended({
+      setup: () => () => h('div', [
+        h('span', String(counter.value)),
+        h(NuxtPage, { pageKey: (route: ReturnType<typeof useRoute>) => route.fullPath }),
+      ]),
+    })
+    await navigateTo('/loading-hooks')
+    await flushPromises()
+
+    let starts = 0
+    const unhook = nuxtApp.hooks.hook('page:loading:start', () => { starts++ })
+    counter.value++
+    await nextTick()
+    await flushPromises()
+
+    expect(starts).toBe(0)
+
+    unhook()
+    el.unmount()
+  })
+
+  it('fires page:loading:end after a changed page key remounts the page', async () => {
+    const key = ref('a')
+    const el = await mountSuspended({
+      setup: () => () => h(NuxtPage, { pageKey: key.value }),
+    })
+    await navigateTo('/loading-hooks')
+    await flushPromises()
+
+    let ends = 0
+    const unhook = nuxtApp.hooks.hook('page:loading:end', () => { ends++ })
+    key.value = 'b'
+    await nextTick()
+    await flushPromises()
+    await nextTick()
+    await flushPromises()
+
+    expect(ends).toBe(1)
+
+    unhook()
+    el.unmount()
+  })
+})
